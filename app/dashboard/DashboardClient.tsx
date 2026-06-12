@@ -187,7 +187,7 @@ export default function DashboardPage() {
     setTxModalOpen(false);
   }
 
-  async function runPollTx(txId: string): Promise<boolean> {
+  async function runPollTx(txId: string): Promise<{ ok: boolean; blockHeight?: number }> {
     setTxStepState({ step1: 'done', step2: 'active', step3: 'pending' });
 
     const result = await pollTx(txId);
@@ -197,9 +197,9 @@ export default function DashboardPage() {
       setTxModalSub(`Confirmed on Bitcoin Block #${result.blockHeight}`);
       await new Promise(r => setTimeout(r, 600));
       setTxStepState({ step1: 'done', step2: 'done', step3: 'done' });
-      return true;
+      return { ok: true, blockHeight: result.blockHeight };
     }
-    return false;
+    return { ok: false };
   }
 
   // ── Identity ─────────────────────────────────────────────────────────────────
@@ -210,7 +210,7 @@ export default function DashboardPage() {
       onFinish: async (data) => {
         const { txId } = data as { txId: string };
         openTxModal('Registering Identity...', txId);
-        const ok = await runPollTx(txId);
+        const { ok } = await runPollTx(txId);
         closeTxModal();
         if (ok) {
           showToast('Identity registered on Bitcoin! ✅', 'success');
@@ -258,7 +258,7 @@ export default function DashboardPage() {
       onFinish: async (data) => {
         const { txId } = data as { txId: string };
         openTxModal('Anchoring to Bitcoin...', txId);
-        const ok = await runPollTx(txId);
+        const { ok, blockHeight: confirmedBlock } = await runPollTx(txId);
         closeTxModal();
         setIsAnchoring(false);
 
@@ -268,7 +268,7 @@ export default function DashboardPage() {
             txId,
             contentType: currentContentType,
             owner: address!,
-            blockHeight: 'Pending',
+            blockHeight: confirmedBlock ?? 'Pending',
             fileName: anchorFileLabel?.name || 'file',
             date: new Date().toLocaleDateString(),
           };
@@ -343,7 +343,7 @@ export default function DashboardPage() {
       onFinish: async (data) => {
         const { txId } = data as { txId: string };
         openTxModal('Adding to Trust Circle...', txId);
-        const ok = await runPollTx(txId);
+        const { ok } = await runPollTx(txId);
         closeTxModal();
         setIsAddingToCircle(false);
 
@@ -367,7 +367,7 @@ export default function DashboardPage() {
       onFinish: async (data) => {
         const { txId } = data as { txId: string };
         openTxModal('Removing from Trust Circle...', txId);
-        const ok = await runPollTx(txId);
+        const { ok } = await runPollTx(txId);
         closeTxModal();
 
         if (ok) {
