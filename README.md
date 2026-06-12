@@ -6,6 +6,29 @@
 
 ---
 
+## SDK
+
+The official JavaScript/TypeScript SDK is published on npm:
+
+```bash
+npm install veritasbtc-sdk
+```
+
+```typescript
+import { createClient } from 'veritasbtc-sdk';
+
+const veritas = createClient(); // mainnet by default
+
+const result = await veritas.verify(file);
+console.log(result.verified);   // true / false
+console.log(result.anchor);     // on-chain record
+console.log(result.identity);   // owner identity
+```
+
+Full SDK docs: [npmjs.com/package/veritasbtc-sdk](https://www.npmjs.com/package/veritasbtc-sdk) · [SDK source](https://github.com/Gbangbolaoluwagbemiga/veritasbtc-sdk)
+
+---
+
 ## What It Does
 
 VeritasBTC lets anyone prove that a file existed, unchanged, at a specific point in time — by writing a cryptographic fingerprint (SHA-256 hash) to the Stacks blockchain, which is anchored to every Bitcoin block.
@@ -21,23 +44,35 @@ VeritasBTC lets anyone prove that a file existed, unchanged, at a specific point
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Next.js 16 App (this repo)                         │
-│  • /dashboard    — anchor, verify, trust circles     │
-│  • /verify       — public certificate verification   │
-│  • /pricing      — plan management                   │
-│  • /how-it-works, /products, /why-bitcoin            │
-└──────────────────────┬──────────────────────────────┘
-                       │ @stacks/connect + @stacks/transactions
-                       ▼
-┌─────────────────────────────────────────────────────┐
-│  Stacks L2 (Bitcoin-anchored)                        │
-│  veritasbtc-identity.clar  — identity registry       │
-│  veritasbtc-anchors.clar   — content fingerprints    │
-└─────────────────────────────────────────────────────┘
-                       │ anchored to every block
-                       ▼
-              ₿  Bitcoin Mainnet
+┌──────────────────────────────────────────────────────────┐
+│  veritasbtc-sdk  (npm: veritasbtc-sdk)                   │
+│  Zero-dep TypeScript SDK — verify any file in 3 lines    │
+└──────────────────────────┬───────────────────────────────┘
+                           │ HTTP
+                           ▼
+┌──────────────────────────────────────────────────────────┐
+│  Next.js 16 App (this repo)                              │
+│  • /dashboard     — anchor, verify, trust circles        │
+│  • /verify        — public certificate verification      │
+│  • /pricing       — plan management                      │
+│  • /how-it-works, /products, /why-bitcoin                │
+│                                                          │
+│  API Proxy Layer (server-side cache)                     │
+│  • GET /api/anchor?hash=   TTL: 1 hour                   │
+│  • GET /api/identity?address=  TTL: 10 min               │
+│  • GET /api/tx?txId=       TTL: 4s pending / 1 day done  │
+│  • GET /api/stats          TTL: 5 min                    │
+└──────────────────┬───────────────────────────────────────┘
+                   │ @stacks/connect (writes) · Hiro API (reads)
+                   ▼
+┌──────────────────────────────────────────────────────────┐
+│  Stacks L2 (Bitcoin-anchored)                            │
+│  veritasbtc-identity.clar  — identity registry           │
+│  veritasbtc-anchors.clar   — content fingerprints        │
+└──────────────────────────────────────────────────────────┘
+                   │ anchored to every block
+                   ▼
+          ₿  Bitcoin Mainnet
 ```
 
 ### Tech Stack
@@ -46,8 +81,10 @@ VeritasBTC lets anyone prove that a file existed, unchanged, at a specific point
 |---|---|
 | Frontend | Next.js 16, TypeScript, App Router, Turbopack |
 | Wallet auth | `@stacks/connect` v8 (Leather / Xverse) |
-| Contract calls | `@stacks/transactions` v7 |
+| Contract writes | `@stacks/transactions` v7 |
+| Contract reads | In-house TTL cache → Hiro API (no rate limits) |
 | Smart contracts | Clarity 2 on Stacks (separate repo) |
+| SDK | `veritasbtc-sdk` — zero-dependency, ESM + CJS |
 | Styling | Vanilla CSS with CSS custom properties |
 | Deployment | Vercel (recommended) |
 
@@ -87,6 +124,11 @@ export const CONTRACT_ADDRESS = 'SP3BHPVZEKANVD62KDME41G0E02KGPMKRANWF5PQK';
 ```
 veritasbtc/
 ├── app/
+│   ├── api/
+│   │   ├── anchor/route.ts       # GET /api/anchor?hash= — 1h cache
+│   │   ├── identity/route.ts     # GET /api/identity?address= — 10m cache
+│   │   ├── tx/route.ts           # GET /api/tx?txId= — 4s/1d cache
+│   │   └── stats/route.ts        # GET /api/stats — 5m cache
 │   ├── dashboard/
 │   │   ├── DashboardClient.tsx   # full dashboard UI (anchor, verify, circles, history)
 │   │   ├── dashboard.css         # dashboard-specific styles
@@ -118,7 +160,10 @@ veritasbtc/
 │   └── usePlan.ts                # plan tier + trial management
 └── lib/
     ├── config.ts                 # network + contract address constants
-    ├── stacks.ts                 # all contract call and read helpers
+    ├── stacks.ts                 # contract call helpers (reads → /api/*, writes → wallet)
+    ├── cache.ts                  # TTL in-memory cache (anchor/identity/tx/stats)
+    ├── hiro.ts                   # fetchWithRetry — exponential backoff, 429 handling
+    ├── clarity.ts                # zero-dep Clarity codec (bufferCV, principalCV)
     └── plan.ts                   # plan logic + localStorage persistence
 ```
 
@@ -129,6 +174,9 @@ veritasbtc/
 ### SSR Safety
 `@stacks/connect` references browser globals at module evaluation time. All Stacks imports are lazy-required inside functions — never at module level. The dashboard uses `dynamic(() => import('./DashboardClient'), { ssr: false })`.
 
+### Backend Caching (Scale)
+All read-only contract calls are proxied through `/api/*` route handlers with in-memory TTL caching. Anchors are immutable once written, so they cache for 1 hour. A single cached response serves thousands of users without hitting Hiro's rate limits.
+
 ### Wallet Flow
 1. User clicks "Connect" → `showConnect()` opens the Hiro wallet modal
 2. On finish → session stored in Gaia (encrypted), user redirected to `/dashboard`
@@ -137,11 +185,11 @@ veritasbtc/
 ### Content Anchoring Flow
 1. User drops a file → `crypto.subtle.digest('SHA-256', buffer)` runs in the browser — file never leaves the device
 2. 32-byte hash passed to `openContractCall` → `anchor-content` on the Stacks chain
-3. TX broadcast, `pollTx()` polls Hiro API every 4 seconds for confirmation
+3. TX broadcast, `pollTx()` polls `/api/tx` every 4 seconds for confirmation
 4. On success → certificate modal with QR code, block height, and shareable `/verify?hash=...` link
 
 ### Public Verification
-Anyone can verify a file at `/verify?hash=<64-char-hex>` — no wallet required. Calls the read-only `get-anchor` contract function and displays owner, block height, content type, and Stacks Explorer links.
+Anyone can verify a file at `/verify?hash=<64-char-hex>` — no wallet required. Calls `/api/anchor` (cached) and displays owner, block height, content type, and Stacks Explorer links.
 
 ---
 
@@ -170,13 +218,24 @@ Every push to `main` will trigger an automatic redeploy.
 
 ---
 
+## Ecosystem
+
+| Package | Status | Install |
+|---|---|---|
+| `veritasbtc-sdk` | ✅ Live on npm | `npm install veritasbtc-sdk` |
+| `@veritasbtc/react` | Planned | React component library |
+| `@veritasbtc/badge` | Planned | Framework-agnostic web component |
+
+---
+
 ## Roadmap
 
-- [ ] `@veritasbtc/sdk` — npm package: verify any file against the protocol in 3 lines
+- [x] `veritasbtc-sdk` — published on npm, zero-dependency, full TypeScript
 - [ ] `@veritasbtc/react` — React component library: `<VerifyBadge>`, `<AnchorButton>`, `<CertificateCard>`
 - [ ] `@veritasbtc/badge` — framework-agnostic web component for embedding proof badges
 - [ ] Lemon Squeezy billing integration (Pro / Business tiers)
 - [ ] Batch anchoring UI for Business plan
+- [ ] Upstash Redis for distributed caching (multi-region Vercel deployments)
 - [ ] REST API for enterprise integrations
 
 ---
