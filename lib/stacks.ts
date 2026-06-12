@@ -1,9 +1,14 @@
 import {
-  fetchCallReadOnlyFunction,
   bufferCV, stringAsciiCV, principalCV,
   cvToJSON, PostConditionMode,
 } from '@stacks/transactions';
 import { NETWORK, CONTRACT_ADDRESS, HIRO_API } from './config';
+import { buf2hex } from './clarity';
+
+/**
+ * READ operations route through /api/* (server-side cached proxy).
+ * WRITE operations use @stacks/connect (wallet-signed, browser only).
+ */
 
 function lazyOpenContractCall(options: Parameters<typeof import('@stacks/connect').openContractCall>[0]) {
   if (typeof window === 'undefined') return;
@@ -12,19 +17,24 @@ function lazyOpenContractCall(options: Parameters<typeof import('@stacks/connect
   openContractCall(options);
 }
 
+// ─── Reads via backend cache ──────────────────────────────────────────────────
+
 export async function getAnchor(hashBuffer: ArrayBuffer) {
-  const result = await fetchCallReadOnlyFunction({
-    network: NETWORK,
-    contractAddress: CONTRACT_ADDRESS,
-    contractName: 'veritasbtc-anchors',
-    functionName: 'get-anchor',
-    functionArgs: [bufferCV(new Uint8Array(hashBuffer))],
-    senderAddress: CONTRACT_ADDRESS,
-  });
-  return cvToJSON(result);
+  const hash = buf2hex(hashBuffer);
+  const res = await fetch(`/api/anchor?hash=${hash}`);
+  if (!res.ok) throw new Error(`getAnchor: ${res.status}`);
+  return res.json();
+}
+
+export async function getIdentity(address: string) {
+  const res = await fetch(`/api/identity?address=${encodeURIComponent(address)}`);
+  if (!res.ok) throw new Error(`getIdentity: ${res.status}`);
+  return res.json();
 }
 
 export async function getAnchorCount(address: string): Promise<number> {
+  // Uses on-chain read — low frequency, only called at dashboard load
+  const { fetchCallReadOnlyFunction } = await import('@stacks/transactions');
   const result = await fetchCallReadOnlyFunction({
     network: NETWORK,
     contractAddress: CONTRACT_ADDRESS,
@@ -36,19 +46,8 @@ export async function getAnchorCount(address: string): Promise<number> {
   return Number(cvToJSON(result).value ?? 0);
 }
 
-export async function getIdentity(address: string) {
-  const result = await fetchCallReadOnlyFunction({
-    network: NETWORK,
-    contractAddress: CONTRACT_ADDRESS,
-    contractName: 'veritasbtc-identity',
-    functionName: 'get-identity',
-    functionArgs: [principalCV(address)],
-    senderAddress: address,
-  });
-  return cvToJSON(result);
-}
-
 export async function isInTrustCircle(owner: string, member: string): Promise<boolean> {
+  const { fetchCallReadOnlyFunction } = await import('@stacks/transactions');
   const result = await fetchCallReadOnlyFunction({
     network: NETWORK,
     contractAddress: CONTRACT_ADDRESS,
@@ -61,7 +60,12 @@ export async function isInTrustCircle(owner: string, member: string): Promise<bo
   return v.value === true || v === true;
 }
 
-export function callRegisterIdentity(name: string, callbacks: { onFinish: (d: any) => void; onCancel: () => void }) {
+// ─── Writes — wallet-signed, browser only ────────────────────────────────────
+
+export function callRegisterIdentity(
+  name: string,
+  callbacks: { onFinish: (d: unknown) => void; onCancel: () => void }
+) {
   lazyOpenContractCall({
     network: NETWORK,
     contractAddress: CONTRACT_ADDRESS,
@@ -78,7 +82,7 @@ export function callAnchorContent(
   hashBuffer: ArrayBuffer,
   contentType: string,
   label: string,
-  callbacks: { onFinish: (d: any) => void; onCancel: () => void }
+  callbacks: { onFinish: (d: unknown) => void; onCancel: () => void }
 ) {
   lazyOpenContractCall({
     network: NETWORK,
@@ -96,7 +100,10 @@ export function callAnchorContent(
   });
 }
 
-export function callAddToTrustCircle(member: string, callbacks: { onFinish: (d: any) => void; onCancel: () => void }) {
+export function callAddToTrustCircle(
+  member: string,
+  callbacks: { onFinish: (d: unknown) => void; onCancel: () => void }
+) {
   lazyOpenContractCall({
     network: NETWORK,
     contractAddress: CONTRACT_ADDRESS,
@@ -109,7 +116,10 @@ export function callAddToTrustCircle(member: string, callbacks: { onFinish: (d: 
   });
 }
 
-export function callRemoveFromTrustCircle(member: string, callbacks: { onFinish: (d: any) => void; onCancel: () => void }) {
+export function callRemoveFromTrustCircle(
+  member: string,
+  callbacks: { onFinish: (d: unknown) => void; onCancel: () => void }
+) {
   lazyOpenContractCall({
     network: NETWORK,
     contractAddress: CONTRACT_ADDRESS,
@@ -122,16 +132,23 @@ export function callRemoveFromTrustCircle(member: string, callbacks: { onFinish:
   });
 }
 
-export async function pollTx(txId: string, timeoutMs = 120000): Promise<{ success: boolean; blockHeight?: number }> {
+// ─── TX polling via cached backend route ─────────────────────────────────────
+
+export async function pollTx(
+  txId: string,
+  timeoutMs = 180_000
+): Promise<{ success: boolean; blockHeight?: number }> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
-      const res = await fetch(`${HIRO_API}/extended/v1/tx/${txId}`);
-      const data = await res.json();
-      if (data.tx_status === 'success') return { success: true, blockHeight: data.block_height };
-      if (data.tx_status?.startsWith('abort')) return { success: false };
-    } catch { /* retry */ }
-    await new Promise(r => setTimeout(r, 4000));
+      const res = await fetch(`/api/tx?txId=${txId}`);
+      if (res.ok) {
+        const data = await res.json() as Record<string, unknown>;
+        if (data.tx_status === 'success') return { success: true, blockHeight: data.block_height as number };
+        if (typeof data.tx_status === 'string' && data.tx_status.startsWith('abort')) return { success: false };
+      }
+    } catch { /* transient error — keep polling */ }
+    await new Promise(r => setTimeout(r, 4_000));
   }
   return { success: false };
 }
@@ -149,11 +166,10 @@ export function sha256(buffer: ArrayBuffer): Promise<ArrayBuffer> {
   return crypto.subtle.digest('SHA-256', buffer);
 }
 
-export function buf2hex(buffer: ArrayBuffer): string {
-  return [...new Uint8Array(buffer)].map(x => x.toString(16).padStart(2, '0')).join('');
-}
+export { buf2hex } from './clarity';
 
-// LocalStorage helpers
+// ─── LocalStorage ─────────────────────────────────────────────────────────────
+
 const HISTORY_KEY = 'veritas-anchor-history';
 const CIRCLES_KEY = 'veritas-trust-circles';
 

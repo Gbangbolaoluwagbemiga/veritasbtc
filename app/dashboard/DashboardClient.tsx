@@ -208,8 +208,9 @@ export default function DashboardPage() {
     if (!identityName.trim()) { showToast('Please enter your name', 'error'); return; }
     callRegisterIdentity(identityName.trim(), {
       onFinish: async (data) => {
-        openTxModal('Registering Identity...', data.txId);
-        const ok = await runPollTx(data.txId);
+        const { txId } = data as { txId: string };
+        openTxModal('Registering Identity...', txId);
+        const ok = await runPollTx(txId);
         closeTxModal();
         if (ok) {
           showToast('Identity registered on Bitcoin! ✅', 'success');
@@ -255,15 +256,16 @@ export default function DashboardPage() {
     setIsAnchoring(true);
     callAnchorContent(currentHashBuffer, currentContentType, currentFileName || 'untitled', {
       onFinish: async (data) => {
-        openTxModal('Anchoring to Bitcoin...', data.txId);
-        const ok = await runPollTx(data.txId);
+        const { txId } = data as { txId: string };
+        openTxModal('Anchoring to Bitcoin...', txId);
+        const ok = await runPollTx(txId);
         closeTxModal();
         setIsAnchoring(false);
 
         if (ok) {
           const certData: AnchorRecord = {
             hash: buf2hex(currentHashBuffer!),
-            txId: data.txId,
+            txId,
             contentType: currentContentType,
             owner: address!,
             blockHeight: 'Pending',
@@ -340,8 +342,9 @@ export default function DashboardPage() {
     setIsAddingToCircle(true);
     callAddToTrustCircle(circleInput.trim(), {
       onFinish: async (data) => {
-        openTxModal('Adding to Trust Circle...', data.txId);
-        const ok = await runPollTx(data.txId);
+        const { txId } = data as { txId: string };
+        openTxModal('Adding to Trust Circle...', txId);
+        const ok = await runPollTx(txId);
         closeTxModal();
         setIsAddingToCircle(false);
 
@@ -363,8 +366,9 @@ export default function DashboardPage() {
   function handleRemoveFromCircle(memberAddr: string) {
     callRemoveFromTrustCircle(memberAddr, {
       onFinish: async (data) => {
-        openTxModal('Removing from Trust Circle...', data.txId);
-        const ok = await runPollTx(data.txId);
+        const { txId } = data as { txId: string };
+        openTxModal('Removing from Trust Circle...', txId);
+        const ok = await runPollTx(txId);
         closeTxModal();
 
         if (ok) {
