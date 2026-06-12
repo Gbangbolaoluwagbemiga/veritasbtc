@@ -48,6 +48,10 @@
   font-size: 1rem;
   color: var(--text-primary);
   margin-bottom: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .id-address {
@@ -83,7 +87,7 @@
 
 .id-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
   margin-bottom: 14px;
 }

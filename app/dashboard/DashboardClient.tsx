@@ -491,7 +491,7 @@ export default function DashboardPage() {
   // ── Short address ─────────────────────────────────────────────────────────────
 
   const shortAddr = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
-  const idName = identityData ? (identityData.name || address) : null;
+  const idName = identityData ? (identityData.name || shortAddr) : null;
 
   if (isLoading || !address) {
     return (
