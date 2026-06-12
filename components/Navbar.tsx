@@ -63,6 +63,7 @@ function NavMobile({ links, activePage }: { links: { href: string; label: string
           ))}
         </ul>
         <div className="mobile-nav-ctas">
+          <WalletPill />
           <Link href="/pricing" className="btn-primary">Get Started Free</Link>
         </div>
       </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import './dashboard.css';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useWallet } from '@/hooks/useWallet';
@@ -330,8 +331,8 @@ export default function DashboardPage() {
   // ── Trust Circles ─────────────────────────────────────────────────────────────
 
   function handleAddToCircle() {
-    if (!circleInput.trim() || !circleInput.startsWith('S')) {
-      showToast('Enter a valid Stacks address (SP... or ST...)', 'error');
+    if (!circleInput.trim() || (!circleInput.startsWith('SP') && !circleInput.startsWith('ST'))) {
+      showToast('Enter a valid Stacks address (SP... for mainnet, ST... for testnet)', 'error');
       return;
     }
     if (!identityData) { showToast('Register your identity first', 'error'); return; }
@@ -528,7 +529,7 @@ export default function DashboardPage() {
       {renderPlanBanner()}
 
       {/* Main layout */}
-      <div style={{ maxWidth: 1260, margin: '0 auto', padding: 'clamp(24px,4vw,48px) clamp(16px,3vw,48px)', display: 'grid', gridTemplateColumns: '280px 1fr', gap: 24, alignItems: 'start' }}>
+      <div className="dash-layout-grid">
 
         {/* Identity sidebar */}
         <aside>
@@ -1144,18 +1145,6 @@ export default function DashboardPage() {
         {toast.msg}
       </div>
 
-      {/* ─── Dashboard-specific styles ───────────────────── */}
-      <style>{`
-        @media (max-width: 900px) {
-          .dash-layout-grid { grid-template-columns: 1fr !important; }
-        }
-        .dash-layout-grid {
-          display: grid;
-          grid-template-columns: 280px 1fr;
-          gap: 24px;
-          align-items: start;
-        }
-      `}</style>
     </div>
   );
 }

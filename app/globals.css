@@ -27,6 +27,11 @@
   --border:         rgba(255, 255, 255, 0.07);
   --border-hover:   rgba(255, 255, 255, 0.14);
 
+  /* Aliases used by landing components */
+  --orange:         #F7931A;
+  --surface-2:      #0E0E1A;
+  --text-secondary: #9090B0;
+
   /* Fonts */
   --font-display: 'Space Grotesk', sans-serif;
   --font-body:    'Inter', sans-serif;
@@ -2781,3 +2786,124 @@ button { border: none; background: none; font: inherit; cursor: pointer; }
   font-family: 'Space Mono', monospace;
   color: var(--text-primary);
 }
+
+/* ─── Landing page class aliases & missing definitions ─────────────── */
+
+/* Hero cert card */
+.hc-net {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(247,147,26,0.15);
+  color: var(--bitcoin);
+  border: 1px solid rgba(247,147,26,0.3);
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+/* hc-file-name and hc-filename both work */
+.hc-file-name, .hc-filename {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* QR cells rendered as divs */
+.hc-qr-row { display: flex; }
+.hc-qr-cell { width: 7px; height: 7px; }
+
+/* Floating hero cards positional variants */
+.hf-card--1 { top: 20%; left: -60px; }
+.hf-card--2 { bottom: 30%; right: -50px; }
+.hf-card--3 { bottom: 8%; left: 10%; }
+
+/* Trust strip below hero CTAs */
+.trust-strip {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Hero stats strip */
+.hs-num {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+}
+.hs-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.hero-stat-div {
+  width: 1px;
+  height: 40px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+/* Landing how-it-works section (homepage version) */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+}
+.step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.step-card:hover { border-color: var(--border-hover); }
+.step-num {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--bitcoin-dim);
+  font-family: var(--font-display);
+  margin-bottom: 8px;
+  line-height: 1;
+}
+.step-icon { font-size: 1.5rem; margin-bottom: 12px; }
+.step-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+.step-body { font-size: 0.83rem; color: var(--text-muted); line-height: 1.6; }
+.step-arrow {
+  position: absolute;
+  top: 50%;
+  right: -16px;
+  transform: translateY(-50%);
+  color: var(--text-subtle);
+  font-size: 1.2rem;
+  z-index: 1;
+}
+@media (max-width: 760px) { .step-arrow { display: none; } }
+
+/* InstantVerify result rows */
+.iv-result-rows { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.iv-result-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  padding: 7px 10px;
+  background: var(--bg-glass);
+  border-radius: 6px;
+}
+.iv-drop-name { font-weight: 600; font-size: 0.88rem; color: var(--text-primary); }
+.iv-drop-size { font-size: 0.75rem; color: var(--text-muted); }
+.iv-drop-hint { font-size: 0.72rem; color: var(--text-subtle); margin-top: 4px; }
