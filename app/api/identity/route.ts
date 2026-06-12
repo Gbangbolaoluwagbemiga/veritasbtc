@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fetchCallReadOnlyFunction, principalCV, cvToJSON } from '@stacks/transactions';
+import { NETWORK, CONTRACT_ADDRESS } from '@/lib/config';
 import { identityCache, TTL } from '@/lib/cache';
-import { callReadOnly } from '@/lib/hiro';
-import { principalCVHex } from '@/lib/clarity';
 
 export async function GET(req: NextRequest) {
   const address = req.nextUrl.searchParams.get('address');
@@ -16,10 +16,33 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const principalHex = principalCVHex(address);
-    const result = await callReadOnly('veritasbtc-identity', 'get-identity', [principalHex], address);
-    identityCache.set(address, result, TTL.IDENTITY);
-    return NextResponse.json(result, { headers: { 'X-Cache': 'MISS' } });
+    const result = await fetchCallReadOnlyFunction({
+      network: NETWORK,
+      contractAddress: CONTRACT_ADDRESS,
+      contractName: 'veritasbtc-identity',
+      functionName: 'get-identity',
+      functionArgs: [principalCV(address)],
+      senderAddress: CONTRACT_ADDRESS,
+    });
+
+    const json = cvToJSON(result);
+
+    if (!json.value) {
+      const data = { found: false };
+      identityCache.set(address, data, TTL.IDENTITY);
+      return NextResponse.json(data, { headers: { 'X-Cache': 'MISS' } });
+    }
+
+    const v = json.value;
+    const data = {
+      found: true,
+      name: v.name?.value ?? '',
+      verificationLevel: Number(v['verification-level']?.value ?? 1),
+      registeredAt: Number(v['registered-at']?.value ?? 0),
+      status: v.status?.value ?? 'active',
+    };
+    identityCache.set(address, data, TTL.IDENTITY);
+    return NextResponse.json(data, { headers: { 'X-Cache': 'MISS' } });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 502 });
   }

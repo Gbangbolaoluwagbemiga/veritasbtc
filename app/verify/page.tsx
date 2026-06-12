@@ -30,13 +30,12 @@ function VerifyContent() {
     const buf = new Uint8Array(hash.match(/.{2}/g)!.map(b => parseInt(b, 16))).buffer;
     getAnchor(buf)
       .then(result => {
-        if (result.type === 'some' || result.value) {
-          const v = result.value ?? result;
+        if (result.found) {
           setData({
-            owner: v.owner?.value ?? v.owner ?? '',
-            block: v['block-height']?.value ?? v.block ?? '?',
-            contentType: v['content-type']?.value ?? v.contentType ?? 'unknown',
-            label: v.label?.value ?? v.label ?? '',
+            owner: result.owner ?? '',
+            block: result.blockHeight ?? '?',
+            contentType: result.contentType ?? 'unknown',
+            label: result.label ?? '',
           });
           setStatus('found');
         } else {

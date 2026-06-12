@@ -153,8 +153,8 @@ export default function DashboardPage() {
     if (!address) return;
     try {
       const result = await getIdentity(address);
-      if (result.type === 'some') {
-        setIdentityData(result.value);
+      if (result.found) {
+        setIdentityData(result);
       } else {
         setIdentityData(null);
       }
@@ -311,13 +311,12 @@ export default function DashboardPage() {
 
     try {
       const result = await getAnchor(verifyHashBuffer);
-      if (result.type === 'some') {
-        const d = result.value;
+      if (result.found) {
         setVerifyResult({
           found: true,
-          owner: d.owner?.value,
-          block: d['block-height']?.value,
-          contentType: d['content-type']?.value,
+          owner: result.owner,
+          block: result.blockHeight,
+          contentType: result.contentType,
         });
       } else {
         setVerifyResult({ found: false });
@@ -389,8 +388,8 @@ export default function DashboardPage() {
 
     try {
       const identCV = await getIdentity(checkMemberInput.trim());
-      if (identCV.type === 'some') {
-        const name = identCV.value.name?.value || checkMemberInput.trim();
+      if (identCV.found) {
+        const name = identCV.name || checkMemberInput.trim();
         const inC = circles.includes(checkMemberInput.trim());
         setMemberCheckResult({ found: true, name, inCircle: inC });
       } else {
@@ -492,7 +491,7 @@ export default function DashboardPage() {
   // ── Short address ─────────────────────────────────────────────────────────────
 
   const shortAddr = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
-  const idName = identityData ? (identityData.name?.value || address) : null;
+  const idName = identityData ? (identityData.name || address) : null;
 
   if (isLoading || !address) {
     return (
