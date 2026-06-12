@@ -13,7 +13,7 @@ export default function FaqAccordion({ items }: { items: FaqItem[] }) {
   return (
     <div className="faq-list">
       {items.map((item, i) => (
-        <div key={i} className="faq-item reveal" data-delay={String(i)}>
+        <div key={i} className={`faq-item reveal${open === i ? ' open' : ''}`} data-delay={String(i)}>
           <button
             className="faq-q"
             onClick={() => setOpen(open === i ? null : i)}
@@ -22,7 +22,7 @@ export default function FaqAccordion({ items }: { items: FaqItem[] }) {
             {item.q}
             <span className="faq-icon">{open === i ? '−' : '+'}</span>
           </button>
-          {open === i && <div className="faq-a">{item.a}</div>}
+          <div className="faq-a">{item.a}</div>
         </div>
       ))}
     </div>

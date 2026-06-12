@@ -253,7 +253,15 @@ export default function DashboardPage() {
       return;
     }
 
+    // Check if this exact fingerprint is already anchored on-chain
     setIsAnchoring(true);
+    const existing = await getAnchor(currentHashBuffer);
+    if (existing.found) {
+      setIsAnchoring(false);
+      showToast('This file is already anchored on Bitcoin — duplicate fingerprint rejected by the contract', 'error');
+      return;
+    }
+
     callAnchorContent(currentHashBuffer, currentContentType, currentFileName || 'untitled', {
       onFinish: async (data) => {
         const { txId } = data as { txId: string };

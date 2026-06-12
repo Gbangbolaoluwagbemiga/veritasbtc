@@ -35,7 +35,7 @@ export default function PricingFaq() {
         <h2 className="section-title reveal" data-delay="1">Pricing questions</h2>
         <div className="faq-list">
           {faqItems.map((item, i) => (
-            <div key={i} className="faq-item reveal" data-delay={String(i)}>
+            <div key={i} className={`faq-item reveal${open === i ? ' open' : ''}`} data-delay={String(i)}>
               <button
                 className="faq-q"
                 onClick={() => setOpen(open === i ? null : i)}
@@ -44,7 +44,7 @@ export default function PricingFaq() {
                 {item.q}
                 <span className="faq-icon">{open === i ? '−' : '+'}</span>
               </button>
-              {open === i && <div className="faq-a">{item.a}</div>}
+              <div className="faq-a">{item.a}</div>
             </div>
           ))}
         </div>
