@@ -1,5 +1,8 @@
 const PLAN_KEY = 'veritas-plan';
 
+// Billing deferred — all users get unlimited anchoring during launch
+const FREE_FOR_ALL = true;
+
 export const PLANS = {
   free:     { id: 'free',     name: 'Free',     color: '#8888AA', anchors: 25,       trial: false, price: '$0' },
   pro:      { id: 'pro',      name: 'Pro',       color: '#F7931A', anchors: Infinity, trial: true,  price: '$0.99' },
@@ -47,8 +50,9 @@ export function isTrialExpired(): boolean {
   return d !== null && d === 0;
 }
 
-export function canAnchor(anchorCount: number): boolean {
+export function canAnchor(_anchorCount: number): boolean {
+  if (FREE_FOR_ALL) return true;
   const plan = getPlan();
   if (plan.id !== 'free') return true;
-  return anchorCount < 25;
+  return _anchorCount < 25;
 }
