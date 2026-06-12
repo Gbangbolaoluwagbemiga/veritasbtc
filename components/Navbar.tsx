@@ -2,6 +2,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
 const WalletPill = dynamic(() => import('./WalletPill'), { ssr: false });
+const NavCta = dynamic(() => import('./NavCta'), { ssr: false });
 
 const Logo = () => (
   <Link href="/" className="nav-logo">
@@ -40,7 +41,7 @@ export default function Navbar({ activePage }: NavbarProps) {
         </ul>
         <div className="nav-actions">
           <WalletPill />
-          <Link href="/pricing" className="btn-primary btn-sm">Get Started Free</Link>
+          <NavCta size="btn-sm" />
         </div>
         <NavMobile links={links} activePage={activePage} />
       </div>
@@ -64,7 +65,7 @@ function NavMobile({ links, activePage }: { links: { href: string; label: string
         </ul>
         <div className="mobile-nav-ctas">
           <WalletPill />
-          <Link href="/pricing" className="btn-primary">Get Started Free</Link>
+          <NavCta />
         </div>
       </div>
     </>
