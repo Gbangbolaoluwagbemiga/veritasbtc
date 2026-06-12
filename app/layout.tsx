@@ -15,6 +15,9 @@ export const metadata: Metadata = {
     description: 'Anchor any file\'s fingerprint on Bitcoin. Permanent proof of existence in seconds.',
     type: 'website',
   },
+  other: {
+    'talentapp:project_verification': 'fd5c1ccb3b010b6a565e46368688b3fc0188fba77771160bdd8bb181c3010f4724ad9be034d99faad4ebc595e0345fcef879c8e6453d24980fafba0a377fb236',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
