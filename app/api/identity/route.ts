@@ -32,7 +32,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ found: false }, { headers: { 'X-Cache': 'MISS' } });
     }
 
-    const v = json.value;
+    // cvToJSON wraps the tuple: json.value = { type: "tuple", value: { fields } }
+    const v = json.value?.value ?? json.value;
     const data = {
       found: true,
       name: v.name?.value ?? '',
