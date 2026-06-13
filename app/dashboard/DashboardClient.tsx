@@ -256,6 +256,7 @@ export default function DashboardPage() {
     // Check if this exact fingerprint is already anchored on-chain
     setIsAnchoring(true);
     const existing = await getAnchor(currentHashBuffer);
+    console.log('[VeritasBTC] pre-anchor check:', JSON.stringify(existing));
     if (existing.found) {
       setIsAnchoring(false);
       showToast('This file is already anchored on Bitcoin — duplicate fingerprint rejected by the contract', 'error');
@@ -318,7 +319,10 @@ export default function DashboardPage() {
     setVerifyResult(null);
 
     try {
+      const hash = buf2hex(verifyHashBuffer);
+      console.log('[VeritasBTC] verify hash:', hash);
       const result = await getAnchor(verifyHashBuffer);
+      console.log('[VeritasBTC] API response:', JSON.stringify(result));
       if (result.found) {
         setVerifyResult({
           found: true,
@@ -329,7 +333,8 @@ export default function DashboardPage() {
       } else {
         setVerifyResult({ found: false });
       }
-    } catch {
+    } catch (err) {
+      console.error('[VeritasBTC] verify error:', err);
       setVerifyResult({ found: false });
       showToast('Network error — could not reach Stacks', 'error');
     } finally {
