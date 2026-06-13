@@ -30,9 +30,8 @@ export async function GET(req: NextRequest) {
     const json = cvToJSON(result);
 
     if (!json.value) {
-      const data = { found: false };
-      anchorCache.set(hash, data, TTL.ANCHOR);
-      return NextResponse.json(data, { headers: { 'X-Cache': 'MISS' } });
+      // Never cache NOT FOUND — the file may be anchored moments later
+      return NextResponse.json({ found: false }, { headers: { 'X-Cache': 'MISS' } });
     }
 
     const v = json.value;

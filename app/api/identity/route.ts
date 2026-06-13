@@ -28,9 +28,8 @@ export async function GET(req: NextRequest) {
     const json = cvToJSON(result);
 
     if (!json.value) {
-      const data = { found: false };
-      identityCache.set(address, data, TTL.IDENTITY);
-      return NextResponse.json(data, { headers: { 'X-Cache': 'MISS' } });
+      // Never cache NOT FOUND — user may register moments later
+      return NextResponse.json({ found: false }, { headers: { 'X-Cache': 'MISS' } });
     }
 
     const v = json.value;
