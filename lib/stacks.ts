@@ -21,12 +21,9 @@ function lazyOpenContractCall(options: Parameters<typeof import('@stacks/connect
 
 export async function getAnchor(hashBuffer: ArrayBuffer) {
   const hash = buf2hex(hashBuffer);
-  console.log('[VeritasBTC] GET /api/anchor?hash=', hash);
   const res = await fetch(`/api/anchor?hash=${hash}`);
-  const body = await res.json();
-  console.log('[VeritasBTC] /api/anchor status:', res.status, 'body:', JSON.stringify(body));
   if (!res.ok) throw new Error(`getAnchor: ${res.status}`);
-  return body;
+  return res.json();
 }
 
 export async function getIdentity(address: string) {

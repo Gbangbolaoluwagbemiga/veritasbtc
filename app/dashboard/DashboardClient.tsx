@@ -124,9 +124,14 @@ export default function DashboardPage() {
   const [certQrUrl, setCertQrUrl] = useState('');
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
-  // Toast
+  // Toast (auto-dismiss)
   const [toast, setToast] = useState({ msg: '', type: '', show: false });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Persistent anchor-exists banner (manual dismiss only)
+  const [anchorBanner, setAnchorBanner] = useState<{
+    owner: string; blockHeight: number | string; contentType: string; label: string;
+  } | null>(null);
 
   // File inputs
   const anchorFileInput = useRef<HTMLInputElement>(null);
@@ -256,10 +261,14 @@ export default function DashboardPage() {
     // Check if this exact fingerprint is already anchored on-chain
     setIsAnchoring(true);
     const existing = await getAnchor(currentHashBuffer);
-    console.log('[VeritasBTC] pre-anchor check:', JSON.stringify(existing));
     if (existing.found) {
       setIsAnchoring(false);
-      showToast('This file is already anchored on Bitcoin — duplicate fingerprint rejected by the contract', 'error');
+      setAnchorBanner({
+        owner: existing.owner,
+        blockHeight: existing.blockHeight,
+        contentType: existing.contentType,
+        label: existing.label,
+      });
       return;
     }
 
@@ -319,10 +328,7 @@ export default function DashboardPage() {
     setVerifyResult(null);
 
     try {
-      const hash = buf2hex(verifyHashBuffer);
-      console.log('[VeritasBTC] verify hash:', hash);
       const result = await getAnchor(verifyHashBuffer);
-      console.log('[VeritasBTC] API response:', JSON.stringify(result));
       if (result.found) {
         setVerifyResult({
           found: true,
@@ -333,8 +339,7 @@ export default function DashboardPage() {
       } else {
         setVerifyResult({ found: false });
       }
-    } catch (err) {
-      console.error('[VeritasBTC] verify error:', err);
+    } catch {
       setVerifyResult({ found: false });
       showToast('Network error — could not reach Stacks', 'error');
     } finally {
@@ -1153,6 +1158,36 @@ export default function DashboardPage() {
               Maybe later
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ─── Already-Anchored Persistent Banner ─────────── */}
+      {anchorBanner && (
+        <div className="anchor-banner" role="alert">
+          <div className="anchor-banner-left">
+            <div className="anchor-banner-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L4 7v10c0 7.5 5.2 13.4 12 15 6.8-1.6 12-7.5 12-15V7L16 2zm0 2.18l8 4v8.4c0 6.3-4.5 11.2-8 12.4-3.5-1.2-8-6.1-8-12.4v-8.4l8-4z" fill="#F7931A" />
+              </svg>
+            </div>
+            <div className="anchor-banner-body">
+              <div className="anchor-banner-title">Already anchored on Bitcoin</div>
+              <div className="anchor-banner-meta">
+                <span>Block <strong style={{ color: 'var(--bitcoin)' }}>#{anchorBanner.blockHeight}</strong></span>
+                <span className="anchor-banner-dot">·</span>
+                <span>{anchorBanner.contentType}</span>
+                {anchorBanner.label && <><span className="anchor-banner-dot">·</span><span>{anchorBanner.label}</span></>}
+                <span className="anchor-banner-dot">·</span>
+                <span className="anchor-banner-owner">{anchorBanner.owner.slice(0, 8)}…{anchorBanner.owner.slice(-6)}</span>
+              </div>
+              <div className="anchor-banner-sub">This exact fingerprint is permanently recorded. No duplicate needed.</div>
+            </div>
+          </div>
+          <button className="anchor-banner-close" onClick={() => setAnchorBanner(null)} aria-label="Dismiss">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
       )}
 

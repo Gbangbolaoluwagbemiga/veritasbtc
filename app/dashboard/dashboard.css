@@ -658,6 +658,57 @@
 }
 .pb-upgrade:hover { opacity: 0.85; }
 
+/* ─── Anchor-exists persistent banner ───────────────────────────── */
+.anchor-banner {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9998;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(680px, calc(100vw - 32px));
+  background: var(--bg-card);
+  border: 1px solid rgba(247, 147, 26, 0.35);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(247,147,26,0.08);
+  animation: banner-drop 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes banner-drop {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.anchor-banner-left { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
+.anchor-banner-icon {
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  background: rgba(247,147,26,0.1);
+  border: 1px solid rgba(247,147,26,0.25);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.anchor-banner-body { flex: 1; min-width: 0; }
+.anchor-banner-title { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); margin-bottom: 4px; }
+.anchor-banner-meta {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+  font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;
+}
+.anchor-banner-dot { opacity: 0.4; }
+.anchor-banner-owner { font-family: monospace; }
+.anchor-banner-sub { font-size: 0.78rem; color: var(--text-muted); opacity: 0.7; }
+.anchor-banner-close {
+  flex-shrink: 0;
+  background: none; border: none;
+  color: var(--text-muted); cursor: pointer;
+  padding: 4px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.anchor-banner-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.06); }
+
 /* ─── Toast ──────────────────────────────────────────────────────── */
 
 #toast {
